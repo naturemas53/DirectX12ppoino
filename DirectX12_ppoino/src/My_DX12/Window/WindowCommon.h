@@ -8,4 +8,5 @@
  */
 #include <Windows.h>
 
+// ウィンドウプロシージャの引数マクロ.
 #define WINDOW_PROC_ARGUMENTS ( HWND i_hwnd, UINT i_uMsg, WPARAM i_wParam, LPARAM i_lParam )

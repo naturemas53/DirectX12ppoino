@@ -7,20 +7,20 @@
 
 #pragma once
 
+#include "WindowCommon.h"
 #include <Windows.h>
 #include <string>
 #include <functional>
 #include <map>
 #include <vector>
 
+#define MESSAGE_CALLBACK_ARGUMENTS ( WPARAM i_wParam, LPARAM i_lParam )
  /**
  * @typedef    FMessageCallback
  * @brief      ウィンドウメッセージを受け取った際の.
  *             コールバックラムダ関数定義です.
- *             （(クラス名):: を前置きするのがめんどいので、外部に定義しています）.
  */
-
-typedef std::function< void(WPARAM, LPARAM) > FMessageCallback;
+using  FMessageCallback = std::function< void MESSAGE_CALLBACK_ARGUMENTS >;
 
  /**
   * @class CWindow
@@ -57,17 +57,33 @@ public:
     /// 登録されているメッセージ受信関数の登録破棄.
     void UnRegistCallBackOnReceiveMessage( UINT i_receiveMessage );
 
+    /// ウィンドウサイズ変更.
+    // TODO : いずれxyを構造体にしたい.
+    void Resize( int i_width, int i_height );
+  
     // ---------下記はいずれ...?--------------
-    // void Resize();
     // bool SwitchFullScreenAndWindow();
     // EWindowType GetCurrentWindowType();
 
 private:
 
+    // 当クラスでしか使わないのでここに定義.
+    // ウィンドウ関係の操作をここに定義.
+    using FWindowFunc = std::function< void() >;
+
+    
+    /// ウィンドウ操作をリクエスト（主にクラス内のみで使います）.
+    void RequestWindowFunc( FWindowFunc i_requestFunc );
+    
     static const DWORD SMK_WINDOW_STYLE; // ウィンドウスタイル.
 
 	HWND m_hWnd; // ウィンドウハンドル.
 
-    std::map< UINT, FMessageCallback > m_callback_map; // コールバック関数のマップ.
+    std::map< UINT, FMessageCallback > m_callbackMap; // コールバック関数のマップ.
+    std::vector< FWindowFunc > m_bookedWindowFuncList; // ウィンドウ操作のリクエストリスト.
 
+    int m_width;
+    int m_height;
+    int m_posX;
+    int m_posY;
 };
