@@ -1,6 +1,7 @@
 #include <windows.h>
 #include "My_DX12/Window/CWindow.h"
 #include "My_DX12/Window/WindowCommon.h"
+#include "My_DX12/CommonUtil.h"
 
 CWindow window;
 
@@ -27,7 +28,7 @@ int WINAPI WinMain(
     window.RegistCallBackOnReceiveMessage( WM_DESTROY, quit_callback );
     window.RegistCallBackOnReceiveMessage( WM_KEYDOWN, KeyDown );
     window.Initialize( hInstance, WinProc );
-    window.Resize( 10, 10 );
+    window.Resize( Vector2Int( 10, 10 ) );
 
     MSG msg;
     memset( &msg, 0, sizeof( MSG ) );
@@ -55,5 +56,5 @@ int WINAPI WinMain(
 
 void KeyDown MESSAGE_CALLBACK_ARGUMENTS
 {
-    window.Resize( 1280, 720 );
+    window.Resize( Vector2Int( 1280, 720 ) );
 }

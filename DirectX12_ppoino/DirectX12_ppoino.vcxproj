@@ -23,6 +23,7 @@
     <ClCompile Include="src\My_DX12\Window\CWindow.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\My_DX12\CommonUtil.h" />
     <ClInclude Include="src\My_DX12\Window\CWindow.h" />
     <ClInclude Include="src\My_DX12\Window\WindowCommon.h" />
   </ItemGroup>

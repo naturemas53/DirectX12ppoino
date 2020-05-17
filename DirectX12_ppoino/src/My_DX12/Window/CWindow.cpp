@@ -7,13 +7,14 @@
 #include "CWindow.h"
 
 /// ウィンドウスタイルの指定.
-const DWORD CWindow::SMK_WINDOW_STYLE = WS_VISIBLE | WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU;
+const DWORD CWindow::SMK_WINDOW_STYLE      = WS_VISIBLE | WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU;
+const DWORD CWindow::SMK_FULL_SCREEN_STYLE = WS_POPUP;
 
 /// コンストラクタ.
 CWindow::CWindow() :
     m_hWnd( NULL ),
-    m_width( 0 ), m_height( 0 ),
-    m_posX( 0 ), m_posY()
+    m_size( Vector2Int() ),
+    m_pos ( Vector2Int() )
 {
     m_callbackMap.clear();
     m_bookedWindowFuncList.clear();
@@ -57,7 +58,7 @@ int CWindow::Initialize( HINSTANCE i_hInstance, WNDPROC i_wndProc)
                             0, // Exで使える拡張スタイル　今回は使うことがないので0.
                             appName.c_str(), "TestWindow", // TODO : 後程定数とかで指定できるように.
                             SMK_WINDOW_STYLE, // HACK : 別な方法でもっと楽に指定できるようにするといいかも.
-                            m_posX, m_posY, m_width, m_height, // TODO : 初期位置や大きさは関数で変えられるように.
+                            m_pos.x, m_pos.y, m_size.x, m_size.y, // TODO : 初期位置や大きさは関数で変えられるように.
                             NULL, NULL, // それぞれ　親ウィンドウ　メニュー　どちらも使わないのでNULL.
                             i_hInstance, NULL // インスタンス　なんかのポインタ（ウィンドウ作成時のデータ？）.
                            );
@@ -169,19 +170,17 @@ void CWindow::UnRegistCallBackOnReceiveMessage( UINT i_receiveMessage )
 
 /**
  * @brief ウィンドウサイズを再設定します.
- * @param [in](i_width)  ウィンドウの幅.
- * @param [in](i_height) ウィンドウの高さ.
+ * @param [in](i_size) 指定するウィンドウの大きさ.
  * @return void.
  */
-void CWindow::Resize( int i_width, int i_height )
+void CWindow::Resize( Vector2Int i_size )
 {
-    m_width  = i_width;
-    m_height = i_height;
+    m_size = i_size;
 
     FWindowFunc resizeFunc = [this]()
     {
         // 親ウィンドウはいないのでなし 動かさない | Z値は考慮しない.
-        SetWindowPos( m_hWnd, NULL, 0, 0, m_width, m_height, SWP_NOMOVE | SWP_NOZORDER );
+        SetWindowPos( m_hWnd, NULL, 0, 0, m_size.x, m_size.y, SWP_NOMOVE | SWP_NOZORDER );
     };
 
     this->RequestWindowFunc( resizeFunc );

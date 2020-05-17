@@ -8,6 +8,7 @@
 #pragma once
 
 #include "WindowCommon.h"
+#include "../CommonUtil.h"
 #include <Windows.h>
 #include <string>
 #include <functional>
@@ -28,6 +29,22 @@ using  FMessageCallback = std::function< void MESSAGE_CALLBACK_ARGUMENTS >;
   */
 class CWindow final
 {
+public: 
+    
+     /**
+     * @enum  EWindowType.
+     * @brief ウィンドウモードの列挙体です.
+     */
+    enum class EWindowType
+    {
+        eWIN_TYPE_NONE = 0,    /// なし（本来は使わない）.
+
+        eWIN_TYPE_WINDOW,      /// ウィンドウモード.
+        eWIN_TYPE_FULL_SCREEN, /// フルスクリーンモード.
+
+        eWIN_TYPE_NUM,         /// モード総数(本来は使わない).
+    };
+
 private:
     // コピー作成 は取り急ぎなしとします.
     CWindow( CWindow& );
@@ -58,8 +75,7 @@ public:
     void UnRegistCallBackOnReceiveMessage( UINT i_receiveMessage );
 
     /// ウィンドウサイズ変更.
-    // TODO : いずれxyを構造体にしたい.
-    void Resize( int i_width, int i_height );
+    void Resize( Vector2Int i_size );
   
     // ---------下記はいずれ...?--------------
     // bool SwitchFullScreenAndWindow();
@@ -75,15 +91,14 @@ private:
     /// ウィンドウ操作をリクエスト（主にクラス内のみで使います）.
     void RequestWindowFunc( FWindowFunc i_requestFunc );
     
-    static const DWORD SMK_WINDOW_STYLE; // ウィンドウスタイル.
+    static const DWORD SMK_WINDOW_STYLE;      // ウィンドウスタイル.
+    static const DWORD SMK_FULL_SCREEN_STYLE; // ウィンドウスタイル.
 
 	HWND m_hWnd; // ウィンドウハンドル.
 
     std::map< UINT, FMessageCallback > m_callbackMap; // コールバック関数のマップ.
     std::vector< FWindowFunc > m_bookedWindowFuncList; // ウィンドウ操作のリクエストリスト.
 
-    int m_width;
-    int m_height;
-    int m_posX;
-    int m_posY;
+    Vector2Int m_size; // ウィンドウサイズ（厳密にはクライアントサイズ）.
+    Vector2Int m_pos;  // ウィンドウポジション.
 };

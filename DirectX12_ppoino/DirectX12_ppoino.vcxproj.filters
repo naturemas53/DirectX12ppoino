@@ -29,5 +29,8 @@
     <ClInclude Include="src\My_DX12\Window\WindowCommon.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
+    <ClInclude Include="src\My_DX12\CommonUtil.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
