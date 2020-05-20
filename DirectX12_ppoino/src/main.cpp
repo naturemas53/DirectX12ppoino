@@ -28,7 +28,7 @@ int WINAPI WinMain(
     window.RegistCallBackOnReceiveMessage( WM_DESTROY, quit_callback );
     window.RegistCallBackOnReceiveMessage( WM_KEYDOWN, KeyDown );
     window.Initialize( hInstance, WinProc );
-    window.Resize( Vector2Int( 10, 10 ) );
+    window.Resize( Vector2Int( 1280, 720 ) );
 
     MSG msg;
     memset( &msg, 0, sizeof( MSG ) );
@@ -56,5 +56,29 @@ int WINAPI WinMain(
 
 void KeyDown MESSAGE_CALLBACK_ARGUMENTS
 {
-    window.Resize( Vector2Int( 1280, 720 ) );
+   using EWindowType = CWindow::EWindowType;
+
+    EWindowType nextMode = EWindowType::eWIN_TYPE_NONE;
+    Vector2Int  nextSize = Vector2Int();
+
+    switch ( window.GetCurrentWindowType() )
+    {
+    case EWindowType::eWIN_TYPE_WINDOW:
+    {
+        nextMode = EWindowType::eWIN_TYPE_FULL_SCREEN;
+        nextSize = Vector2Int( 1920, 1080 );
+    }
+    break;
+    case EWindowType::eWIN_TYPE_FULL_SCREEN:
+    {
+        nextMode = EWindowType::eWIN_TYPE_WINDOW;
+        nextSize = Vector2Int( 1280, 720 );
+    }
+    break;
+    default:
+        return;
+    }
+
+    window.ChangeWindowMode( nextMode );
+    window.Resize( nextSize );
 }

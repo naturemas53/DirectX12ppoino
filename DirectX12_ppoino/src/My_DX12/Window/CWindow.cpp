@@ -8,16 +8,34 @@
 
 /// ウィンドウスタイルの指定.
 const DWORD CWindow::SMK_WINDOW_STYLE      = WS_VISIBLE | WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU;
-const DWORD CWindow::SMK_FULL_SCREEN_STYLE = WS_POPUP;
+const DWORD CWindow::SMK_FULL_SCREEN_STYLE = WS_VISIBLE | WS_POPUP;
+
+namespace
+{
+    /**
+    * @brief  ディスプレイのサイズを取得します.
+    * @return Vector2Int 中にはメインディスプレイの大きさが入っています.
+    */
+    inline Vector2Int GetDispraySize()
+    {
+        RECT rec;
+        memset(&rec, 0, sizeof(RECT));
+        HWND hDeskWnd = GetDesktopWindow(); //この関数でデスクトップのハンドルを取得.
+        GetWindowRect(hDeskWnd, &rec);      //デスクトップのハンドルからその(画面の)大きさを取得.
+
+        return Vector2Int(rec.right - rec.left, rec.bottom - rec.top);
+    }
+}
 
 /// コンストラクタ.
 CWindow::CWindow() :
     m_hWnd( NULL ),
     m_size( Vector2Int() ),
-    m_pos ( Vector2Int() )
+    m_pos ( Vector2Int() ),
+    m_displaySize( Vector2Int() ),
+    m_currentType( EWindowType::eWIN_TYPE_WINDOW )
 {
     m_callbackMap.clear();
-    m_bookedWindowFuncList.clear();
 }
 
 /// デストラクタ.
@@ -34,6 +52,8 @@ CWindow::~CWindow()
  */
 int CWindow::Initialize( HINSTANCE i_hInstance, WNDPROC i_wndProc)
 {
+    // 最初にディスプレイの大きさを取得.
+    m_displaySize = GetDispraySize();
 
     std::string appName = "TestApp";
     WNDCLASS wc;
@@ -57,7 +77,7 @@ int CWindow::Initialize( HINSTANCE i_hInstance, WNDPROC i_wndProc)
     m_hWnd = CreateWindowEx(
                             0, // Exで使える拡張スタイル　今回は使うことがないので0.
                             appName.c_str(), "TestWindow", // TODO : 後程定数とかで指定できるように.
-                            SMK_WINDOW_STYLE, // HACK : 別な方法でもっと楽に指定できるようにするといいかも.
+                            this->GetWindowStyle( m_currentType ), // 周りに枠があるか、最小化ボタンがあるかなどの指定を行う.
                             m_pos.x, m_pos.y, m_size.x, m_size.y, // TODO : 初期位置や大きさは関数で変えられるように.
                             NULL, NULL, // それぞれ　親ウィンドウ　メニュー　どちらも使わないのでNULL.
                             i_hInstance, NULL // インスタンス　なんかのポインタ（ウィンドウ作成時のデータ？）.
@@ -84,19 +104,6 @@ int CWindow::Initialize( HINSTANCE i_hInstance, WNDPROC i_wndProc)
  */
 int CWindow::Update()
 {
-    // ウィンドウ生成後のみ、リクエストを受け付けます.
-    if ( m_hWnd != NULL && m_bookedWindowFuncList.size() > 0 )
-    {
-        // リクエスト実行.
-        for ( FWindowFunc WindowFunc : m_bookedWindowFuncList )
-        {
-            WindowFunc();
-        }
-    }
-
-    // リクエストクリア.
-    m_bookedWindowFuncList.clear();
-
     UpdateWindow( m_hWnd );
     
     return 0;
@@ -175,26 +182,69 @@ void CWindow::UnRegistCallBackOnReceiveMessage( UINT i_receiveMessage )
  */
 void CWindow::Resize( Vector2Int i_size )
 {
-    m_size = i_size;
+    // ウィンドウが生成されていない.
+    if (m_hWnd == NULL) return;
+    // ウィンドウタイプが正しく設定されていない.
+    if( m_currentType <= EWindowType::eWIN_TYPE_NONE || m_currentType >= EWindowType::eWIN_TYPE_NUM ) return;
 
-    FWindowFunc resizeFunc = [this]()
-    {
-        // 親ウィンドウはいないのでなし 動かさない | Z値は考慮しない.
-        SetWindowPos( m_hWnd, NULL, 0, 0, m_size.x, m_size.y, SWP_NOMOVE | SWP_NOZORDER );
-    };
+    m_size = this->CalcWindowSizeFromCilentSize( ( m_currentType == EWindowType::eWIN_TYPE_WINDOW ) ? i_size : m_displaySize );
 
-    this->RequestWindowFunc( resizeFunc );
+    // 親ウィンドウはいないのでなし 動かさない | Z値は考慮しない | WM_NCCALCSIZEを送る（≒サイズ変更による再描画？).
+    SetWindowPos( m_hWnd, NULL, 0, 0, m_size.x, m_size.y, SWP_NOZORDER | SWP_FRAMECHANGED );
 }
 
 /**
- * @brief ウィンドウ操作のリクエストを行います.
- * @param [in](i_requestFunc)  リクエストする操作.
+ * @brief ウィンドウモードを変更します.
+ * @param [in](i_windowType) 指定するウィンドウタイプ.
+ * @return 正常に変更ができればtrue 失敗するとfalseを返します.
+ */
+bool CWindow::ChangeWindowMode( EWindowType  i_windowType )
+{
+   // ウィンドウが生成されていない.
+   if (m_hWnd == NULL) return false;
+
+   m_currentType = i_windowType;
+
+   LONG res = SetWindowLong( m_hWnd, GWL_STYLE, this->GetWindowStyle( m_currentType ) );
+
+   return res != 0;
+}
+
+/**
+ * @brief  ウィンドウスタイルを取得します.
+ * @return DWORD 様々なフラグを組み合わせたウィンドウスタイルが返ります.
+ */
+DWORD CWindow::GetWindowStyle( EWindowType i_windowType )
+{
+    DWORD style = 0;
+
+    switch ( i_windowType )
+    {
+    case EWindowType::eWIN_TYPE_WINDOW:      style = SMK_WINDOW_STYLE;      break;
+    case EWindowType::eWIN_TYPE_FULL_SCREEN: style = SMK_FULL_SCREEN_STYLE; break;
+    default: break;
+    }
+
+    return style;
+}
+
+/**
+ * @brief クライアント領域をもとに、ウィンドウサイズの計算.
+ * @param [in](i_clientSize) 確保するクライアント領域.
  * @return void.
  */
-void CWindow::RequestWindowFunc( FWindowFunc i_requestFunc )
+Vector2Int CWindow::CalcWindowSizeFromCilentSize( Vector2Int i_clientSize )
 {
     // ウィンドウが生成されていない.
-    if (m_hWnd == NULL) return;
+    if (m_hWnd == NULL) return Vector2Int( 0, 0 );
 
-    m_bookedWindowFuncList.push_back( i_requestFunc );
+    DWORD style = this->GetWindowStyle( m_currentType );
+    RECT  rec;
+    InitializeZero( &rec );
+    rec.right  = i_clientSize.x;
+    rec.bottom = i_clientSize.y;
+
+    AdjustWindowRect( &rec, style, false );
+
+    return Vector2Int( rec.right - rec.left, rec.bottom - rec.top );
 }

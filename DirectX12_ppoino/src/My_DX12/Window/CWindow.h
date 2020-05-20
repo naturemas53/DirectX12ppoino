@@ -77,9 +77,17 @@ public:
     /// ウィンドウサイズ変更.
     void Resize( Vector2Int i_size );
   
-    // ---------下記はいずれ...?--------------
-    // bool SwitchFullScreenAndWindow();
-    // EWindowType GetCurrentWindowType();
+    /// ウィンドウモードを変更します.
+    bool ChangeWindowMode( EWindowType i_windowType );
+
+    /// 現在のウィンドウモードを返します.
+    inline EWindowType GetCurrentWindowType()
+    {
+        // 未生成時に限り、NONEを返す.
+        if( m_hWnd == NULL ) return EWindowType::eWIN_TYPE_NONE;
+        // それ以外は現状を返す.
+        return m_currentType;
+    }
 
 private:
 
@@ -87,18 +95,22 @@ private:
     // ウィンドウ関係の操作をここに定義.
     using FWindowFunc = std::function< void() >;
 
-    
-    /// ウィンドウ操作をリクエスト（主にクラス内のみで使います）.
-    void RequestWindowFunc( FWindowFunc i_requestFunc );
-    
+    /// ウィンドウスタイルを取得.
+    DWORD      GetWindowStyle( EWindowType i_windowType );
+    /// クライアント領域をもとに、ウィンドウサイズの計算.
+    Vector2Int CalcWindowSizeFromCilentSize( Vector2Int i_clientSize );
+
     static const DWORD SMK_WINDOW_STYLE;      // ウィンドウスタイル.
     static const DWORD SMK_FULL_SCREEN_STYLE; // ウィンドウスタイル.
 
 	HWND m_hWnd; // ウィンドウハンドル.
 
     std::map< UINT, FMessageCallback > m_callbackMap; // コールバック関数のマップ.
-    std::vector< FWindowFunc > m_bookedWindowFuncList; // ウィンドウ操作のリクエストリスト.
 
-    Vector2Int m_size; // ウィンドウサイズ（厳密にはクライアントサイズ）.
+    Vector2Int m_size; // ウィンドウサイズ.
     Vector2Int m_pos;  // ウィンドウポジション.
+
+    Vector2Int m_displaySize;    // ディスプレイの大きさ（関数で取得する為、定数にしていません）.
+
+    EWindowType m_currentType; // ウィンドウの表示モード.
 };

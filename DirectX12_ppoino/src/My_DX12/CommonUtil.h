@@ -118,14 +118,24 @@ struct Vector2Int
 };
 
 /**
-* @fn void safeDelete(T** obj)
+* @fn void SafeDelete(T** obj)
 * @brief 多重開放（≒NULL状態での解放）を防ぐ解放関数です.
 * @param[in] obj 解放するオブジェクトを入れてください.
 */
-template <class T> inline void safeDelete(T** i_obj) {
+template <class T> inline void SafeDelete(T** i_obj) {
 	if( (*i_obj) == nullptr ) return;
 	if( (*i_obj) == NULL    ) return; // 一応こっちの形式もチェック.
 
 	delete (*i_obj);
 	(*i_obj) = nullptr;
+}
+
+/**
+* @fn void InitializeZero(T* i_obj)
+* @brief 0初期化を行います.
+* @param[in] obj 初期化するオブジェクトを入れてください.
+*/
+template <class T> inline void InitializeZero(T* i_obj)
+{
+	memset( i_obj, 0, sizeof( T ) );
 }
